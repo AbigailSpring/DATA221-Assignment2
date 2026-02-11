@@ -1,46 +1,42 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-
-url = "https://en.wikipedia.org/wiki/Machine_learning"
-headers = {"User-Agent": "Mozilla/5.0"}
-response = requests.get(url, headers=headers)
-
+wiki_url = "https://en.wikipedia.org/wiki/Machine_learning"
+request_headers = {"User-Agent": "Mozilla/5.0"}
+response = requests.get(wiki_url, headers=request_headers)
 if response.status_code != 200:
     print("Failed to fetch page:", response.status_code)
     exit()
 soup = BeautifulSoup(response.text, "html.parser")
-content_div = soup.find("div", id="mw-content-text")
-if not content_div:
+main_content_div = soup.find("div", id="mw-content-text")
+if not main_content_div:
     print("Main content div not found")
     exit()
-tables = content_div.find_all("table")
+all_tables = main_content_div.find_all("table")
 target_table = None
-for table in tables:
-    rows = table.find_all("tr")
-    if len(rows) >= 4:
+for table in all_tables:
+    table_rows = table.find_all("tr")
+    if len(table_rows) >= 4:
         target_table = table
         break
 if not target_table:
     print("No suitable table found")
     exit()
 header_row = target_table.find("tr")
-th_tags = header_row.find_all("th")
-
-if th_tags:
-    headers = [th.get_text(strip=True) for th in th_tags]
+header_cells = header_row.find_all("th")
+if header_cells:
+    table_headers = [th.get_text(strip=True) for th in header_cells]
 else:
-    cols_count = max(len(row.find_all(["td", "th"])) for row in target_table.find_all("tr"))
-    headers = [f"col{i+1}" for i in range(cols_count)]
-data = []
+    max_columns = max(len(row.find_all(["td", "th"])) for row in target_table.find_all("tr"))
+    table_headers = [f"col{i+1}" for i in range(max_columns)]
+table_data = []
 for tr in target_table.find_all("tr"):
-    cells = tr.find_all(["td", "th"])
-    row = [cell.get_text(strip=True) for cell in cells]
-    while len(row) < len(headers):
-        row.append("")
-    if any(cell.strip() for cell in row):
-        data.append(row)
-df = pd.DataFrame(data[1:], columns=headers)
-df.to_csv("wiki_table.csv", index=False)
-
-print(f"Table saved to wiki_table.csv with {len(df)} rows and {len(df.columns)} columns.")
+    row_cells = tr.find_all(["td", "th"])
+    row_data = [cell.get_text(strip=True) for cell in row_cells]
+    while len(row_data) < len(table_headers):
+        row_data.append("")
+    if any(cell.strip() for cell in row_data):
+        table_data.append(row_data)
+df_table = pd.DataFrame(table_data[1:], columns=table_headers)
+df_table.to_csv("wiki_table.csv", index=False)
+print(f"Table saved to wiki_table.csv with {len(df_table)} rows and {len(df_table.columns)} columns.")
