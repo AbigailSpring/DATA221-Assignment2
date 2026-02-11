@@ -1,5 +1,6 @@
 import string
 from collections import defaultdict
+import string
 
 with open("sample-file.txt", "r", encoding="utf-8") as input_file:
     all_lines = input_file.readlines()
